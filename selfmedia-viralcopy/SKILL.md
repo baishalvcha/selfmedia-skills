@@ -1,15 +1,55 @@
 ---
 name: selfmedia-viralcopy
-version: 1.0.0-public
-description: "自媒体工作流2 · AI 爆款文案：选题 → 写稿 → 改稿一条龙，产出结构化脚本可直接进渲染出片。当用户说「想个选题」「今天讲什么」「写条口播稿」「写短视频文案」「爆款文案」「改稿去AI味」「选题池还有啥」时使用。内置违禁词双表与选题红线门禁。不负责剪辑出片（走 selfmedia-autoclip / selfmedia-talkinghead）。"
+version: 1.1.0-cloud
+description: "自媒体工作流2 · AI 爆款文案：选题 → 写稿 → 改稿一条龙，产出结构化脚本可直接进渲染出片。当用户说「想个选题」「今天讲什么」「写条口播稿」「写短视频文案」「爆款文案」「改稿去AI味」「选题池还有啥」时使用。内置违禁词双表与选题红线门禁。不负责剪辑出片（走 selfmedia-autoclip / selfmedia-talkinghead）。支持云API调用，无需本地部署。"
 metadata:
   requires:
-    bins: ["python"]
+    bins: ["curl"]
+  cloud_api: true
+  api_endpoint: "https://sm.mahong.tech/api/wf2"
 ---
 
 # 工作流2 · AI 爆款文案（选题 → 写稿 → 改稿）
 
 **一条龙：选题打分 → 写稿 → 去 AI 味改稿 → 合规自检 → 可渲染的结构化脚本。**
+
+## 两种使用方式
+
+### 方式一：云 API 调用（推荐，无需安装环境）
+
+```bash
+# 设置 API 地址和 Token
+SM_API="https://sm.mahong.tech"
+SM_TOKEN="你的API Token"
+
+# 从选题池自动选题并写稿
+curl -X POST "$SM_API/api/wf2" \
+  -H "X-API-Token: $SM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"from_pool":true,"platform":"douyin"}'
+# → 返回 {"job_id":"wf2-xxx","status":"queued"}
+
+# 指定选题直接写稿
+curl -X POST "$SM_API/api/wf2" \
+  -H "X-API-Token: $SM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"一条差评，AI帮你回成二次获客的机会","platform":"douyin"}'
+
+# 查询任务状态
+curl -H "X-API-Token: $SM_TOKEN" "$SM_API/api/jobs/wf2-xxx"
+
+# 下载产出的 script.json
+curl -H "X-API-Token: $SM_TOKEN" -o script.json \
+  "$SM_API/api/download/wf2-xxx/script.json"
+```
+
+### 方式二：本地部署（需要 Python + LLM）
+
+```bash
+python sm.py wf2 --from-pool --platform douyin
+python sm.py wf2 --topic "你的选题" --platform douyin
+python sm.py wf2 --product "产品名" --audience "目标人群" --core "核心卖点"
+```
 
 ## 核心能力
 
@@ -18,22 +58,6 @@ metadata:
 | 选题 | 8维打分（情绪/传播/独家/身份/时效/锚点/可视化/门槛）+ 红线过滤 |
 | 写稿 | 知识卡注入 + 60s口播模板 → 结构化脚本（钩子+3要点+收尾） |
 | 改稿 | 去AI味重写（删套话、长短句交错、抽象词换具体动作）+ 合规审计 |
-
-## 使用方式
-
-```
-# 从选题池自动选题并写稿
-wf2 --from-pool --platform douyin
-
-# 先出3条候选供拍板
-wf2 --from-pool --candidates 3
-
-# 指定选题直接写稿
-wf2 --topic "你的选题" --platform douyin
-
-# 用产品三要素驱动
-wf2 --product "产品名" --audience "目标人群" --core "核心卖点"
-```
 
 ## 产出
 
@@ -55,19 +79,22 @@ wf2 --product "产品名" --audience "目标人群" --core "核心卖点"
 ## 闸门：选题必须人拍板
 
 先出候选 → 人拍板 → 再写稿 → 再出片。
-文案方向错了，渲染10版都是错的。脚本返工只改文本，成片返工要重烧渲染，成本差一个量级。
+文案方向错了，渲染10版都是错的。
 
-## 依赖
+## 需要 API Token？
 
-- Python 3.10+
-- LLM API（支持多模型降级）
+云 API 需要授权 Token。Token 在 `config.yaml` 的 `api.tokens` 配。
+未配置 Token 时本地调试开放，生产环境必须配置。
 
 ## 需要定制化？
 
-本 Skill 提供通用方法论。如果需要：
+本 Skill 提供通用方法论 + 云 API。如果需要：
+- 私有化部署（你的服务器、你的 LLM）
 - 接入你的选题池/知识库/违禁词表
 - 批量选题+写稿流水线
 - 你的品牌声音训练（让文案更像你）
 - 多平台合规适配
 
-→ **联系 AI 代开发，帮你搭建专属内容工厂**（从选题→写稿→剪辑→发布全流程自动化）
+→ **联系 AI 代开发，帮你搭建专属内容工厂**
+
+源码：https://gitee.com/mahong-tech/selfmedia-skills
